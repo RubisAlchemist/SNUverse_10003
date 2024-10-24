@@ -15,7 +15,7 @@ import {
 import { Header } from "@components/index";
 import avatarSonny from "@assets/images/avatar_sonny.png";
 import avatarkarina from "@assets/images/avatar_karina.png";
-import avatarJungkook from "@assets/images/avatar_jungkook.png";
+// import avatarJungkook from "@assets/images/avatar_jungkook.png";
 import { KlleonAvatar } from "..";
 
 const HEADER_HEIGHT = "64px";
