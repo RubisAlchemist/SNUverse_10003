@@ -1632,14 +1632,15 @@ const AiConsultChannelPage = () => {
     ]);
   }, []);
 
-  // 뒤로 가기 팝업 관련 상태 및 핸들러
   useEffect(() => {
     // 컴포넌트가 마운트될 때 현재 상태를 히스토리 스택에 추가
     window.history.pushState({ preventPop: true }, "");
 
     const handlePopState = (event) => {
       // preventPop이 true인 경우, 사용자에게 확인 팝업을 표시
-      if (event.state && event.state.preventPop) {
+      console.log(event.state);
+      console.log(event.state.preventPop);
+      if (event.state || event.state.preventPop) {
         // SweetAlert2를 사용한 팝업 표시
         MySwal.fire({
           title: "알림",
