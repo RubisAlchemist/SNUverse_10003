@@ -50,19 +50,19 @@ const SeamlessVideoPlayer = ({
     if (fetchInProgress.current[index]) return; // Avoid overlapping fetches
     fetchInProgress.current[index] = true;
 
-    if (index === 0) {
-      console.log("sleeping...");
-      await sleep(2000);
-      console.log("sleep end");
-      setIsInitialLoading(false);
-    }
+    // if (index === 0) {
+    //   console.log("sleeping...");
+    //   await sleep(2000);
+    //   console.log("sleep end");
+    //   setIsInitialLoading(false);
+    // }
 
     const url = getVideoUrl(index);
     console.log(url);
     const mediaSource = mediaSourceRef.current;
     retryCounts.current[index] = 0;
 
-    const MAX_RETRIES_BEFORE_FINAL_CHECK = 5;
+    const MAX_RETRIES_BEFORE_FINAL_CHECK = 3;
 
     while (!isStopped.current) {
       try {
