@@ -1853,14 +1853,14 @@ const AiConsultChannelPage = () => {
           uname={uname}
           phoneNumber={phoneNumber}
           selectedAvatar={selectedAvatar}
-          disabled={
-            isGreetingsPlaying ||
-            !!overlayVideo ||
-            isSeamlessPlaying ||
-            isUploading ||
-            isLoading ||
-            !isAnswerButtonEnabled
-          }
+          // disabled={
+          //   isGreetingsPlaying ||
+          //   !!overlayVideo ||
+          //   isSeamlessPlaying ||
+          //   isUploading ||
+          //   isLoading ||
+          //   !isAnswerButtonEnabled
+          // }
           onRecordingStart={handleRecordingStart}
           onRecordingStop={handleRecordingStop} // 추가된 부분
         />
