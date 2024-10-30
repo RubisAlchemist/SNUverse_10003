@@ -49,6 +49,8 @@ const AiConsultChannelPage = () => {
   const [timestampsArray, setTimestampsArray] = useState([]); // 타임스탬프 저장 배열 추가
 
   const greetingsVideoRef = useRef(null);
+  const isRecordingAllowed =
+    overlayVideo === null && !isSeamlessPlaying && !isLoading;
 
   // Redux 상태 가져오기
   const audioSources = useSelector((state) => state.aiConsult.audio);
@@ -547,14 +549,7 @@ const AiConsultChannelPage = () => {
           selectedAvatar={selectedAvatar}
           onRecordingStart={handleRecordingStart}
           onRecordingStop={handleRecordingStop} // 추가된 부분
-          // disabled={
-          //   isGreetingsPlaying ||
-          //   !!overlayVideo ||
-          //   isSeamlessPlaying ||
-          //   isUploading ||
-          //   isLoading
-          //   // !isAnswerButtonEnabled
-          // }
+          isRecordingAllowed={isRecordingAllowed}
         />
 
         {/* 종료 버튼 */}

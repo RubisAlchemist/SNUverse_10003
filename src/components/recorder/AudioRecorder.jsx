@@ -299,6 +299,309 @@
 
 // // export default AudioRecorder;
 
+// // 버튼 없애기
+// import { useEffect, useRef, useState } from "react";
+// import { useDispatch, useSelector } from "react-redux";
+// import {
+//   clearAudioSrc,
+//   uploadRequest,
+//   setNotePlaying,
+// } from "@store/ai/aiConsultSlice";
+// import PropTypes from "prop-types";
+
+// const AudioRecorder = ({
+//   uname,
+//   phoneNumber,
+//   selectedAvatar,
+//   onRecordingStart,
+//   onRecordingStop,
+// }) => {
+//   const dispatch = useDispatch();
+//   const current = useSelector((state) => state.aiConsult.audio.current);
+
+//   const audioContextRef = useRef(null);
+//   const mediaRecorderRef = useRef(null);
+//   const chunksRef = useRef([]);
+//   const isRecordingRef = useRef(false);
+//   const animationIdRef = useRef(null); // To manage the animation frame
+
+//   // Timers for debouncing
+//   const voiceStartTimerRef = useRef(null);
+//   const voiceStopTimerRef = useRef(null);
+
+//   // Debounce durations in milliseconds
+//   const VOICE_START_DEBOUNCE = 50; // Start recording after 500ms of voice
+//   const VOICE_STOP_DEBOUNCE = 1000; // Stop recording after 2000ms of silence
+
+//   // Flag to prevent multiple uploads
+//   const isUploadingRef = useRef(false);
+
+//   // State for volume visualization and error messages
+//   const [volume, setVolume] = useState(0);
+//   const [error, setError] = useState(null);
+
+//   useEffect(() => {
+//     let isComponentMounted = true;
+//     let analyser = null;
+//     let dataArray = null;
+
+//     // Check for Web Audio API support
+//     if (!window.AudioContext && !window.webkitAudioContext) {
+//       console.error("이 브라우저는 Web Audio API를 지원하지 않습니다.");
+//       setError("Web Audio API를 지원하지 않는 브라우저입니다.");
+//       return;
+//     }
+
+//     // Request microphone access
+//     navigator.mediaDevices
+//       .getUserMedia({ audio: true })
+//       .then((stream) => {
+//         console.log("Obtained stream:", stream);
+//         console.log(
+//           "Is stream an instance of MediaStream?",
+//           stream instanceof MediaStream
+//         );
+
+//         if (!isComponentMounted) return;
+
+//         // Initialize AudioContext
+//         audioContextRef.current = new (window.AudioContext ||
+//           window.webkitAudioContext)();
+
+//         // Create a MediaStreamAudioSourceNode
+//         const sourceNode =
+//           audioContextRef.current.createMediaStreamSource(stream);
+
+//         // Create an AnalyserNode for audio processing
+//         analyser = audioContextRef.current.createAnalyser();
+//         analyser.fftSize = 512; // Frequency domain analysis size
+//         sourceNode.connect(analyser);
+//         dataArray = new Uint8Array(analyser.fftSize);
+
+//         // Initialize MediaRecorder for recording audio
+//         mediaRecorderRef.current = new MediaRecorder(stream, {
+//           mimeType: "audio/webm",
+//         });
+
+//         // Handle data availability
+//         mediaRecorderRef.current.ondataavailable = (event) => {
+//           chunksRef.current.push(event.data);
+//         };
+
+//         // Handle recording stop event
+//         mediaRecorderRef.current.onstop = handleRecordingStop;
+
+//         // Voice Activity Detection (VAD) based on volume threshold with debounce
+//         const detectVoice = () => {
+//           analyser.getByteTimeDomainData(dataArray);
+//           let sum = 0;
+//           for (let i = 0; i < dataArray.length; i++) {
+//             const sample = dataArray[i] - 128;
+//             sum += sample * sample;
+//           }
+//           const rms = Math.sqrt(sum / dataArray.length);
+//           const currentVolume = rms / 128;
+
+//           // Update the volume state for visualization
+//           setVolume(currentVolume);
+
+//           // Log the computed volume for debugging
+//           // console.log(`Computed Volume: ${currentVolume}`);
+
+//           // Define a threshold for voice activity
+//           const threshold = 0.05; // Adjust based on testing
+
+//           if (currentVolume > threshold) {
+//             // If voice is detected, reset the stop timer
+//             if (voiceStopTimerRef.current) {
+//               clearTimeout(voiceStopTimerRef.current);
+//               voiceStopTimerRef.current = null;
+//             }
+
+//             // Start the start timer if not already recording
+//             if (!isRecordingRef.current && !voiceStartTimerRef.current) {
+//               voiceStartTimerRef.current = setTimeout(() => {
+//                 startRecording();
+//                 voiceStartTimerRef.current = null;
+//               }, VOICE_START_DEBOUNCE);
+//             }
+//           } else {
+//             // If silence is detected, reset the start timer
+//             if (voiceStartTimerRef.current) {
+//               clearTimeout(voiceStartTimerRef.current);
+//               voiceStartTimerRef.current = null;
+//             }
+
+//             // Start the stop timer if recording
+//             if (isRecordingRef.current && !voiceStopTimerRef.current) {
+//               voiceStopTimerRef.current = setTimeout(() => {
+//                 stopRecording();
+//                 voiceStopTimerRef.current = null;
+//               }, VOICE_STOP_DEBOUNCE);
+//             }
+//           }
+
+//           // Continue the loop
+//           animationIdRef.current = requestAnimationFrame(detectVoice);
+//         };
+
+//         // Start voice detection
+//         detectVoice();
+//       })
+//       .catch((err) => {
+//         console.error("마이크 접근 에러:", err);
+//         setError(
+//           "마이크 접근이 필요합니다. 설정에서 마이크 권한을 허용해주세요."
+//         );
+//         alert("마이크 접근이 필요합니다. 설정에서 마이크 권한을 허용해주세요.");
+//       });
+
+//     // Cleanup function to run when the component unmounts
+//     return () => {
+//       isComponentMounted = false;
+
+//       // Cancel the animation frame to stop VAD
+//       if (animationIdRef.current) {
+//         cancelAnimationFrame(animationIdRef.current);
+//       }
+
+//       // Clear any pending timers
+//       if (voiceStartTimerRef.current) {
+//         clearTimeout(voiceStartTimerRef.current);
+//       }
+//       if (voiceStopTimerRef.current) {
+//         clearTimeout(voiceStopTimerRef.current);
+//       }
+
+//       // Close the AudioContext to release resources
+//       if (audioContextRef.current) {
+//         audioContextRef.current.close();
+//       }
+
+//       // Stop the MediaRecorder if it's active
+//       if (
+//         mediaRecorderRef.current &&
+//         mediaRecorderRef.current.state !== "inactive"
+//       ) {
+//         mediaRecorderRef.current.stop();
+//       }
+//     };
+//   }, []);
+
+//   // Function to start recording
+//   const startRecording = () => {
+//     if (
+//       mediaRecorderRef.current &&
+//       mediaRecorderRef.current.state === "inactive"
+//     ) {
+//       mediaRecorderRef.current.start();
+//       isRecordingRef.current = true;
+//       console.log("녹음 시작");
+//       if (onRecordingStart) {
+//         onRecordingStart();
+//       }
+//     }
+//   };
+
+//   // Function to stop recording
+//   const stopRecording = () => {
+//     if (
+//       mediaRecorderRef.current &&
+//       mediaRecorderRef.current.state === "recording"
+//     ) {
+//       mediaRecorderRef.current.stop();
+//       isRecordingRef.current = false;
+//       console.log("녹음 종료");
+//     }
+//   };
+
+//   // Function to handle recording stop event
+//   const handleRecordingStop = () => {
+//     if (isUploadingRef.current) {
+//       console.warn("이미 업로드 중입니다. 새로운 업로드를 시작하지 않습니다.");
+//       return;
+//     }
+
+//     const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+//     chunksRef.current = [];
+
+//     const requestSentTime = Date.now();
+//     if (onRecordingStop) {
+//       onRecordingStop(requestSentTime);
+//     }
+
+//     // Log the blob details for debugging
+//     console.log("Recorded Blob:", blob);
+//     console.log("Blob size:", blob.size);
+//     console.log("Blob type:", blob.type);
+
+//     // Prepare form data for server upload
+//     const formData = new FormData();
+//     formData.append("audio", blob, `${uname}_audio_${current}.webm`);
+//     formData.append("uname", uname);
+//     formData.append("phoneNumber", phoneNumber);
+//     formData.append("selectedAvatar", selectedAvatar);
+
+//     // Debug: Log FormData entries
+//     for (let pair of formData.entries()) {
+//       if (pair[0] === "audio") {
+//         console.log(`${pair[0]}: [Blob with size ${pair[1].size}]`);
+//       } else {
+//         console.log(`${pair[0]}: ${pair[1]}`);
+//       }
+//     }
+
+//     // Prevent multiple uploads
+//     isUploadingRef.current = true;
+
+//     // Dispatch Redux actions
+//     dispatch(clearAudioSrc());
+//     dispatch(uploadRequest(formData))
+//       .unwrap()
+//       .then((response) => {
+//         console.log("업로드 성공:", response);
+//         // Handle successful upload if needed
+//       })
+//       .catch((error) => {
+//         console.error("업로드 실패:", error);
+//         // Optionally, provide user feedback about the failure
+//       })
+//       .finally(() => {
+//         isUploadingRef.current = false;
+//       });
+
+//     dispatch(setNotePlaying());
+//   };
+
+//   return (
+//     <div>
+//       {/* Volume Meter */}
+//       <div
+//         style={{
+//           width: `${volume * 100}%`,
+//           height: "10px",
+//           backgroundColor: "green",
+//           transition: "width 0.1s",
+//           marginTop: "10px",
+//         }}
+//       ></div>
+
+//       {/* Error Message */}
+//       {error && <p style={{ color: "red" }}>{error}</p>}
+//     </div>
+//   );
+// };
+
+// AudioRecorder.propTypes = {
+//   uname: PropTypes.string.isRequired,
+//   phoneNumber: PropTypes.string.isRequired,
+//   selectedAvatar: PropTypes.string.isRequired,
+//   onRecordingStart: PropTypes.func,
+//   onRecordingStop: PropTypes.func,
+// };
+
+// export default AudioRecorder;
+
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -314,6 +617,7 @@ const AudioRecorder = ({
   selectedAvatar,
   onRecordingStart,
   onRecordingStop,
+  isRecordingAllowed, // New prop
 }) => {
   const dispatch = useDispatch();
   const current = useSelector((state) => state.aiConsult.audio.current);
@@ -322,20 +626,16 @@ const AudioRecorder = ({
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const isRecordingRef = useRef(false);
-  const animationIdRef = useRef(null); // To manage the animation frame
+  const animationIdRef = useRef(null);
 
-  // Timers for debouncing
   const voiceStartTimerRef = useRef(null);
   const voiceStopTimerRef = useRef(null);
 
-  // Debounce durations in milliseconds
-  const VOICE_START_DEBOUNCE = 50; // Start recording after 500ms of voice
-  const VOICE_STOP_DEBOUNCE = 1000; // Stop recording after 2000ms of silence
+  const VOICE_START_DEBOUNCE = 50;
+  const VOICE_STOP_DEBOUNCE = 1000;
 
-  // Flag to prevent multiple uploads
   const isUploadingRef = useRef(false);
 
-  // State for volume visualization and error messages
   const [volume, setVolume] = useState(0);
   const [error, setError] = useState(null);
 
@@ -344,53 +644,38 @@ const AudioRecorder = ({
     let analyser = null;
     let dataArray = null;
 
-    // Check for Web Audio API support
     if (!window.AudioContext && !window.webkitAudioContext) {
-      console.error("이 브라우저는 Web Audio API를 지원하지 않습니다.");
-      setError("Web Audio API를 지원하지 않는 브라우저입니다.");
+      console.error("This browser does not support Web Audio API.");
+      setError("Your browser does not support Web Audio API.");
       return;
     }
 
-    // Request microphone access
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
-        console.log("Obtained stream:", stream);
-        console.log(
-          "Is stream an instance of MediaStream?",
-          stream instanceof MediaStream
-        );
-
         if (!isComponentMounted) return;
 
-        // Initialize AudioContext
         audioContextRef.current = new (window.AudioContext ||
           window.webkitAudioContext)();
 
-        // Create a MediaStreamAudioSourceNode
         const sourceNode =
           audioContextRef.current.createMediaStreamSource(stream);
 
-        // Create an AnalyserNode for audio processing
         analyser = audioContextRef.current.createAnalyser();
-        analyser.fftSize = 512; // Frequency domain analysis size
+        analyser.fftSize = 512;
         sourceNode.connect(analyser);
         dataArray = new Uint8Array(analyser.fftSize);
 
-        // Initialize MediaRecorder for recording audio
         mediaRecorderRef.current = new MediaRecorder(stream, {
           mimeType: "audio/webm",
         });
 
-        // Handle data availability
         mediaRecorderRef.current.ondataavailable = (event) => {
           chunksRef.current.push(event.data);
         };
 
-        // Handle recording stop event
         mediaRecorderRef.current.onstop = handleRecordingStop;
 
-        // Voice Activity Detection (VAD) based on volume threshold with debounce
         const detectVoice = () => {
           analyser.getByteTimeDomainData(dataArray);
           let sum = 0;
@@ -401,23 +686,24 @@ const AudioRecorder = ({
           const rms = Math.sqrt(sum / dataArray.length);
           const currentVolume = rms / 128;
 
-          // Update the volume state for visualization
           setVolume(currentVolume);
 
-          // Log the computed volume for debugging
-          // console.log(`Computed Volume: ${currentVolume}`);
+          const threshold = 0.05;
 
-          // Define a threshold for voice activity
-          const threshold = 0.05; // Adjust based on testing
+          if (!isRecordingAllowed) {
+            if (isRecordingRef.current) {
+              stopRecording();
+            }
+            animationIdRef.current = requestAnimationFrame(detectVoice);
+            return;
+          }
 
           if (currentVolume > threshold) {
-            // If voice is detected, reset the stop timer
             if (voiceStopTimerRef.current) {
               clearTimeout(voiceStopTimerRef.current);
               voiceStopTimerRef.current = null;
             }
 
-            // Start the start timer if not already recording
             if (!isRecordingRef.current && !voiceStartTimerRef.current) {
               voiceStartTimerRef.current = setTimeout(() => {
                 startRecording();
@@ -425,13 +711,11 @@ const AudioRecorder = ({
               }, VOICE_START_DEBOUNCE);
             }
           } else {
-            // If silence is detected, reset the start timer
             if (voiceStartTimerRef.current) {
               clearTimeout(voiceStartTimerRef.current);
               voiceStartTimerRef.current = null;
             }
 
-            // Start the stop timer if recording
             if (isRecordingRef.current && !voiceStopTimerRef.current) {
               voiceStopTimerRef.current = setTimeout(() => {
                 stopRecording();
@@ -440,31 +724,28 @@ const AudioRecorder = ({
             }
           }
 
-          // Continue the loop
           animationIdRef.current = requestAnimationFrame(detectVoice);
         };
 
-        // Start voice detection
         detectVoice();
       })
       .catch((err) => {
-        console.error("마이크 접근 에러:", err);
+        console.error("Microphone access error:", err);
         setError(
-          "마이크 접근이 필요합니다. 설정에서 마이크 권한을 허용해주세요."
+          "Microphone access is required. Please allow microphone permissions in your settings."
         );
-        alert("마이크 접근이 필요합니다. 설정에서 마이크 권한을 허용해주세요.");
+        alert(
+          "Microphone access is required. Please allow microphone permissions in your settings."
+        );
       });
 
-    // Cleanup function to run when the component unmounts
     return () => {
       isComponentMounted = false;
 
-      // Cancel the animation frame to stop VAD
       if (animationIdRef.current) {
         cancelAnimationFrame(animationIdRef.current);
       }
 
-      // Clear any pending timers
       if (voiceStartTimerRef.current) {
         clearTimeout(voiceStartTimerRef.current);
       }
@@ -472,12 +753,10 @@ const AudioRecorder = ({
         clearTimeout(voiceStopTimerRef.current);
       }
 
-      // Close the AudioContext to release resources
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
 
-      // Stop the MediaRecorder if it's active
       if (
         mediaRecorderRef.current &&
         mediaRecorderRef.current.state !== "inactive"
@@ -485,9 +764,14 @@ const AudioRecorder = ({
         mediaRecorderRef.current.stop();
       }
     };
-  }, []);
+  }, [isRecordingAllowed]); // Add isRecordingAllowed to dependencies
 
-  // Function to start recording
+  useEffect(() => {
+    if (!isRecordingAllowed && isRecordingRef.current) {
+      stopRecording();
+    }
+  }, [isRecordingAllowed]);
+
   const startRecording = () => {
     if (
       mediaRecorderRef.current &&
@@ -495,14 +779,13 @@ const AudioRecorder = ({
     ) {
       mediaRecorderRef.current.start();
       isRecordingRef.current = true;
-      console.log("녹음 시작");
+      console.log("Recording started");
       if (onRecordingStart) {
         onRecordingStart();
       }
     }
   };
 
-  // Function to stop recording
   const stopRecording = () => {
     if (
       mediaRecorderRef.current &&
@@ -510,14 +793,13 @@ const AudioRecorder = ({
     ) {
       mediaRecorderRef.current.stop();
       isRecordingRef.current = false;
-      console.log("녹음 종료");
+      console.log("Recording stopped");
     }
   };
 
-  // Function to handle recording stop event
   const handleRecordingStop = () => {
     if (isUploadingRef.current) {
-      console.warn("이미 업로드 중입니다. 새로운 업로드를 시작하지 않습니다.");
+      console.warn("Already uploading. Not starting a new upload.");
       return;
     }
 
@@ -529,41 +811,22 @@ const AudioRecorder = ({
       onRecordingStop(requestSentTime);
     }
 
-    // Log the blob details for debugging
-    console.log("Recorded Blob:", blob);
-    console.log("Blob size:", blob.size);
-    console.log("Blob type:", blob.type);
-
-    // Prepare form data for server upload
     const formData = new FormData();
     formData.append("audio", blob, `${uname}_audio_${current}.webm`);
     formData.append("uname", uname);
     formData.append("phoneNumber", phoneNumber);
     formData.append("selectedAvatar", selectedAvatar);
 
-    // Debug: Log FormData entries
-    for (let pair of formData.entries()) {
-      if (pair[0] === "audio") {
-        console.log(`${pair[0]}: [Blob with size ${pair[1].size}]`);
-      } else {
-        console.log(`${pair[0]}: ${pair[1]}`);
-      }
-    }
-
-    // Prevent multiple uploads
     isUploadingRef.current = true;
 
-    // Dispatch Redux actions
     dispatch(clearAudioSrc());
     dispatch(uploadRequest(formData))
       .unwrap()
       .then((response) => {
-        console.log("업로드 성공:", response);
-        // Handle successful upload if needed
+        console.log("Upload successful:", response);
       })
       .catch((error) => {
-        console.error("업로드 실패:", error);
-        // Optionally, provide user feedback about the failure
+        console.error("Upload failed:", error);
       })
       .finally(() => {
         isUploadingRef.current = false;
@@ -579,7 +842,7 @@ const AudioRecorder = ({
         style={{
           width: `${volume * 100}%`,
           height: "10px",
-          backgroundColor: "green",
+          backgroundColor: isRecordingAllowed ? "green" : "gray",
           transition: "width 0.1s",
           marginTop: "10px",
         }}
@@ -597,6 +860,7 @@ AudioRecorder.propTypes = {
   selectedAvatar: PropTypes.string.isRequired,
   onRecordingStart: PropTypes.func,
   onRecordingStop: PropTypes.func,
+  isRecordingAllowed: PropTypes.bool.isRequired,
 };
 
 export default AudioRecorder;
