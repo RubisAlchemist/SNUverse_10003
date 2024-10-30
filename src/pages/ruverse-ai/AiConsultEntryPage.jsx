@@ -343,7 +343,7 @@ const AiConsultEntryPage = () => {
     });
   };
 
-  const onClickStart = () => {
+  const onClickStart = async () => {
     let unameToUse = uname.value;
 
     const containsKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(uname.value);
@@ -364,7 +364,7 @@ const AiConsultEntryPage = () => {
     formData.append("phoneNumber", phoneNumber.value);
     formData.append("selectedAvatar", selectedAvatar);
 
-    dispatch(uploadNewSessionRequest(formData));
+    await dispatch(uploadNewSessionRequest(formData));
 
     navigate(
       `/ai-consult/${unameToUse}?phoneNumber=${phoneNumber.value}&selectedAvatar=${selectedAvatar}`
