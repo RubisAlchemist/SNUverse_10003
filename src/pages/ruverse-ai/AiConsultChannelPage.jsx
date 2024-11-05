@@ -661,6 +661,8 @@ import {
   clearNotePlaying,
   setErrorPlaying,
   clearErrorPlaying,
+  setAudioErrorOccurred,
+  clearAudioErrorOccurred,
 } from "@store/ai/aiConsultSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
@@ -722,6 +724,9 @@ const AiConsultChannelPage = () => {
   const sessionStatus = useSelector((state) => state.aiConsult.sessionStatus);
   const isErrorPlaying = useSelector(
     (state) => state.aiConsult.audio.isErrorPlaying
+  );
+  const isAudioErrorOccurred = useSelector(
+    (state) => state.aiConsult.audio.isErrorOccurred
   );
 
   // 선택된 아바타에 따른 소스 가져오기
@@ -857,6 +862,16 @@ const AiConsultChannelPage = () => {
     }
   }, [isErrorOccurred, errorSrc, dispatch]);
 
+  // 에러 발생 시 처리
+  useEffect(() => {
+    if (isAudioErrorOccurred) {
+      console.log("Microphone input device changed, playing error video");
+      setOverlayVideo(errorSrc);
+      dispatch(setErrorPlaying());
+      dispatch(clearAudioErrorOccurred()); // 에러 상태 초기화
+    }
+  }, [isAudioErrorOccurred, errorSrc, dispatch]);
+
   // 페이지 새로고침(F5, Ctrl+R) 방지
   useEffect(() => {
     const handleKeyPress = (e) => {
@@ -903,7 +918,13 @@ const AiConsultChannelPage = () => {
       }
     }
     // 이 부분에서 isErrorPlaying 상태를 확인하여 SeamlessVideoPlayer가 다시 시작되지 않도록 함
-    if (src && !isSeamlessPlaying && src !== "error" && !isErrorPlaying) {
+    if (
+      src &&
+      !isSeamlessPlaying &&
+      src !== "error" &&
+      !isErrorPlaying &&
+      !isErrorOccurred
+    ) {
       console.log("시작하기 seamless 비디오 재생");
       setIsSeamlessPlaying(true);
       setIsLoading(true);
@@ -921,6 +942,7 @@ const AiConsultChannelPage = () => {
     dispatch,
     sessionStatus,
     isErrorPlaying,
+    isErrorOccurred,
   ]);
 
   const handleOverlayVideoEnd = useCallback(() => {

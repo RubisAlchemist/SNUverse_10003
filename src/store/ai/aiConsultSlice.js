@@ -34,6 +34,7 @@ const initialState = {
     isNotePlaying: false,
     isGreetingsPlaying: true,
     isErrorPlaying: false,
+    isErrorOccurred: false, // 마이크 입력 장치 변경으로 인한 에러 상태 추가
     src: "",
     upload: {
       error: null,
@@ -140,6 +141,12 @@ export const aiConsultSlice = createSlice({
     clearErrorPlaying: (state) => {
       state.audio.isErrorPlaying = false;
     },
+    setAudioErrorOccurred: (state) => {
+      state.audio.isErrorOccurred = true;
+    },
+    clearAudioErrorOccurred: (state) => {
+      state.audio.isErrorOccurred = false;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(uploadRequest.pending, (state) => {
@@ -193,6 +200,8 @@ export const {
   clearNotePlaying,
   setErrorPlaying, // New action
   clearErrorPlaying, // New action
+  setAudioErrorOccurred, // 추가된 액션
+  clearAudioErrorOccurred, // 추가된 액션
 } = aiConsultSlice.actions;
 
 export default aiConsultSlice.reducer;

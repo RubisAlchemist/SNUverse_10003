@@ -877,6 +877,7 @@ import {
   clearAudioSrc,
   uploadRequest,
   setNotePlaying,
+  setAudioErrorOccurred,
 } from "@store/ai/aiConsultSlice";
 import PropTypes from "prop-types";
 
@@ -943,180 +944,180 @@ const AudioRecorder = ({
     return "상담사에게 말씀해주세요";
   };
 
-  useEffect(() => {
-    let isComponentMounted = true;
-    let analyser = null;
-    let dataArray = null;
-    let stream = null;
+  useEffect(
+    () => {
+      let isComponentMounted = true;
+      let analyser = null;
+      let dataArray = null;
+      let stream = null;
 
-    const initializeMedia = () => {
-      if (!isComponentMounted) return;
+      const initializeMedia = () => {
+        if (!isComponentMounted) return;
 
-      if (!window.AudioContext && !window.webkitAudioContext) {
-        console.error("This browser does not support Web Audio API.");
-        setError("Your browser does not support Web Audio API.");
-        return;
-      }
-
-      navigator.mediaDevices
-        .getUserMedia({ audio: true })
-        .then((mediaStream) => {
-          if (!isComponentMounted) return;
-
-          stream = mediaStream;
-
-          // Listen for device change events
-          stream.getTracks().forEach((track) => {
-            track.onended = () => {
-              console.log("Media stream track ended");
-              // Reinitialize media when the track ends
-              if (isComponentMounted) {
-                cleanupMedia();
-                initializeMedia();
-              }
-            };
-          });
-
-          audioContextRef.current = new (window.AudioContext ||
-            window.webkitAudioContext)();
-
-          const sourceNode =
-            audioContextRef.current.createMediaStreamSource(stream);
-
-          analyser = audioContextRef.current.createAnalyser();
-          analyser.fftSize = 512;
-          sourceNode.connect(analyser);
-          dataArray = new Uint8Array(analyser.fftSize);
-
-          mediaRecorderRef.current = new MediaRecorder(stream, {
-            mimeType: "audio/webm",
-          });
-
-          mediaRecorderRef.current.ondataavailable = (event) => {
-            chunksRef.current.push(event.data);
-          };
-
-          mediaRecorderRef.current.onstop = handleRecordingStop;
-
-          detectVoice();
-        })
-        .catch((err) => {
-          console.error("Microphone access error:", err);
-          setError(
-            "Microphone access is required. Please allow microphone permissions in your settings."
-          );
-          alert(
-            "Microphone access is required. Please allow microphone permissions in your settings."
-          );
-        });
-    };
-
-    const cleanupMedia = () => {
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
-      }
-
-      if (voiceStartTimerRef.current) {
-        clearTimeout(voiceStartTimerRef.current);
-        voiceStartTimerRef.current = null;
-      }
-      if (voiceStopTimerRef.current) {
-        clearTimeout(voiceStopTimerRef.current);
-        voiceStopTimerRef.current = null;
-      }
-
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-        audioContextRef.current = null;
-      }
-
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state !== "inactive"
-      ) {
-        mediaRecorderRef.current.stop();
-        mediaRecorderRef.current = null;
-      }
-
-      if (stream) {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
-        stream = null;
-      }
-
-      isRecordingRef.current = false;
-      setIsRecording(false);
-    };
-
-    const detectVoice = () => {
-      try {
-        analyser.getByteTimeDomainData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          const sample = dataArray[i] - 128;
-          sum += sample * sample;
-        }
-        const rms = Math.sqrt(sum / dataArray.length);
-        const currentVolume = rms / 128;
-
-        setVolume(currentVolume);
-
-        const threshold = 0.05;
-
-        if (!isRecordingAllowed) {
-          if (isRecordingRef.current) {
-            stopRecording();
-          }
-          setIsRecording(false);
-          animationIdRef.current = requestAnimationFrame(detectVoice);
+        if (!window.AudioContext && !window.webkitAudioContext) {
+          console.error("This browser does not support Web Audio API.");
+          setError("Your browser does not support Web Audio API.");
           return;
         }
 
-        if (currentVolume > threshold) {
-          if (voiceStopTimerRef.current) {
-            clearTimeout(voiceStopTimerRef.current);
-            voiceStopTimerRef.current = null;
-          }
+        navigator.mediaDevices
+          .getUserMedia({ audio: true })
+          .then((mediaStream) => {
+            if (!isComponentMounted) return;
 
-          if (!isRecordingRef.current && !voiceStartTimerRef.current) {
-            voiceStartTimerRef.current = setTimeout(() => {
-              startRecording();
-              voiceStartTimerRef.current = null;
-            }, VOICE_START_DEBOUNCE);
-          }
-        } else {
-          if (voiceStartTimerRef.current) {
-            clearTimeout(voiceStartTimerRef.current);
-            voiceStartTimerRef.current = null;
-          }
+            stream = mediaStream;
 
-          if (isRecordingRef.current && !voiceStopTimerRef.current) {
-            voiceStopTimerRef.current = setTimeout(() => {
+            stream.getTracks().forEach((track) => {
+              track.onended = () => {
+                console.log("Microphone input device changed or disconnected");
+                // 에러 상태를 Redux에 업데이트
+                dispatch(setAudioErrorOccurred());
+              };
+            });
+
+            audioContextRef.current = new (window.AudioContext ||
+              window.webkitAudioContext)();
+
+            const sourceNode =
+              audioContextRef.current.createMediaStreamSource(stream);
+
+            analyser = audioContextRef.current.createAnalyser();
+            analyser.fftSize = 512;
+            sourceNode.connect(analyser);
+            dataArray = new Uint8Array(analyser.fftSize);
+
+            mediaRecorderRef.current = new MediaRecorder(stream, {
+              mimeType: "audio/webm",
+            });
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+              chunksRef.current.push(event.data);
+            };
+
+            mediaRecorderRef.current.onstop = handleRecordingStop;
+
+            detectVoice();
+          })
+          .catch((err) => {
+            console.error("Microphone access error:", err);
+            setError(
+              "Microphone access is required. Please allow microphone permissions in your settings."
+            );
+            alert(
+              "Microphone access is required. Please allow microphone permissions in your settings."
+            );
+          });
+      };
+
+      const cleanupMedia = () => {
+        if (animationIdRef.current) {
+          cancelAnimationFrame(animationIdRef.current);
+        }
+
+        if (voiceStartTimerRef.current) {
+          clearTimeout(voiceStartTimerRef.current);
+          voiceStartTimerRef.current = null;
+        }
+        if (voiceStopTimerRef.current) {
+          clearTimeout(voiceStopTimerRef.current);
+          voiceStopTimerRef.current = null;
+        }
+
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state !== "inactive"
+        ) {
+          mediaRecorderRef.current.stop();
+          mediaRecorderRef.current = null;
+        }
+
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+          stream = null;
+        }
+
+        isRecordingRef.current = false;
+        setIsRecording(false);
+      };
+
+      const detectVoice = () => {
+        try {
+          analyser.getByteTimeDomainData(dataArray);
+          let sum = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const sample = dataArray[i] - 128;
+            sum += sample * sample;
+          }
+          const rms = Math.sqrt(sum / dataArray.length);
+          const currentVolume = rms / 128;
+
+          setVolume(currentVolume);
+
+          const threshold = 0.05;
+
+          if (!isRecordingAllowed) {
+            if (isRecordingRef.current) {
               stopRecording();
+            }
+            setIsRecording(false);
+            animationIdRef.current = requestAnimationFrame(detectVoice);
+            return;
+          }
+
+          if (currentVolume > threshold) {
+            if (voiceStopTimerRef.current) {
+              clearTimeout(voiceStopTimerRef.current);
               voiceStopTimerRef.current = null;
-            }, VOICE_STOP_DEBOUNCE);
+            }
+
+            if (!isRecordingRef.current && !voiceStartTimerRef.current) {
+              voiceStartTimerRef.current = setTimeout(() => {
+                startRecording();
+                voiceStartTimerRef.current = null;
+              }, VOICE_START_DEBOUNCE);
+            }
+          } else {
+            if (voiceStartTimerRef.current) {
+              clearTimeout(voiceStartTimerRef.current);
+              voiceStartTimerRef.current = null;
+            }
+
+            if (isRecordingRef.current && !voiceStopTimerRef.current) {
+              voiceStopTimerRef.current = setTimeout(() => {
+                stopRecording();
+                voiceStopTimerRef.current = null;
+              }, VOICE_STOP_DEBOUNCE);
+            }
+          }
+
+          animationIdRef.current = requestAnimationFrame(detectVoice);
+        } catch (error) {
+          console.error("Error in detectVoice:", error);
+          // Reinitialize media on error
+          if (isComponentMounted) {
+            cleanupMedia();
+            initializeMedia();
           }
         }
+      };
 
-        animationIdRef.current = requestAnimationFrame(detectVoice);
-      } catch (error) {
-        console.error("Error in detectVoice:", error);
-        // Reinitialize media on error
-        if (isComponentMounted) {
-          cleanupMedia();
-          initializeMedia();
-        }
-      }
-    };
+      initializeMedia();
 
-    initializeMedia();
-
-    return () => {
-      isComponentMounted = false;
-      cleanupMedia();
-    };
-  }, [isRecordingAllowed]);
+      return () => {
+        isComponentMounted = false;
+        cleanupMedia();
+      };
+    },
+    [isRecordingAllowed],
+    dispatch
+  );
 
   useEffect(() => {
     if (!isRecordingAllowed && isRecordingRef.current) {

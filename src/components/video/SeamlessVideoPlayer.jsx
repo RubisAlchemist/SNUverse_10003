@@ -276,31 +276,19 @@ const SeamlessVideoPlayer = ({
       style={{ width: "100%", height: "100%" }}
       onPlay={onStart}
       onError={onError}
+      // 비디오 일시 중지나 재생 중단 이벤트 핸들러에서 에러를 트리거하지 않음
+      // 필요하다면 이벤트 핸들러를 제거하거나 로그만 남김
       onPause={() => {
         console.log("SeamlessVideoPlayer: Video paused");
-        if (onError) {
-          onError(new Error("Video paused unexpectedly"));
-        }
+        // 에러 콜백 호출하지 않음
       }}
       onStalled={() => {
         console.log("SeamlessVideoPlayer: Video stalled");
-        if (onError) {
-          onError(new Error("Video stalled"));
-        }
+        // 에러 콜백 호출하지 않음
       }}
       onWaiting={() => {
         console.log("SeamlessVideoPlayer: Video waiting");
-        // 비디오가 버퍼링 중일 수 있으므로 일정 시간 후에도 재생되지 않으면 에러 처리
-        setTimeout(() => {
-          if (
-            videoRef.current &&
-            videoRef.current.readyState < 3 // HAVE_FUTURE_DATA
-          ) {
-            if (onError) {
-              onError(new Error("Video stuck in waiting state"));
-            }
-          }
-        }, 3000); // 5초 후에 상태 확인
+        // 에러 콜백 호출하지 않음
       }}
     />
   );
