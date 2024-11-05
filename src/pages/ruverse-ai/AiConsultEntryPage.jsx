@@ -298,6 +298,8 @@ import { convert } from "hangul-romanization";
 import { Header, HEADER_HEIGHT } from "@components/index";
 import avatarSonny from "@assets/images/avatar_sonny.png";
 import avatarkarina from "@assets/images/avatar_karina.png";
+import avatarChloe from "@assets/images/avatar_chloe.png";
+import avatarDohyung from "@assets/images/avatar_dohyung.png";
 import { useDispatch, useSelector } from "react-redux";
 import { uploadNewSessionRequest } from "@store/ai/aiConsultSlice";
 import styled from "styled-components";
@@ -405,7 +407,7 @@ const AiConsultEntryPage = () => {
               helperText={
                 uname.error ? "이름은 숫자, 영문, 한글만 가능합니다." : ""
               }
-              label="이름을 입력해주세요."
+              label="이름을 입력해주세요"
               onChange={onChangeUname}
               inputProps={{}}
               sx={{
@@ -413,6 +415,10 @@ const AiConsultEntryPage = () => {
                 width: { xs: "70%", sm: "70%", md: "70%" },
                 maxWidth: "400px",
                 mb: 2,
+              }}
+              InputLabelProps={{
+                // shrink: true,
+                required: false, // '*' 표시를 제거합니다.
               }}
             />
 
@@ -425,7 +431,7 @@ const AiConsultEntryPage = () => {
                   ? "전화번호는 11자리의 숫자만 입력 가능합니다."
                   : ""
               }
-              label="전화번호를 입력해주세요."
+              label="전화번호를 입력해주세요"
               onChange={onChangePhoneNumber}
               inputProps={{
                 pattern: "[0-9]{11}",
@@ -438,6 +444,10 @@ const AiConsultEntryPage = () => {
                 width: { xs: "70%", sm: "70%", md: "70%" },
                 maxWidth: "400px",
               }}
+              InputLabelProps={{
+                // shrink: true,
+                required: false, // '*' 표시를 제거합니다.
+              }}
             />
           </Box>
 
@@ -445,6 +455,8 @@ const AiConsultEntryPage = () => {
             {[
               { name: "sonny", src: avatarSonny },
               { name: "karina", src: avatarkarina },
+              { name: "chloe", src: avatarChloe },
+              { name: "dohyung", src: avatarDohyung },
             ].map((avatar) => (
               <Box
                 key={avatar.name}

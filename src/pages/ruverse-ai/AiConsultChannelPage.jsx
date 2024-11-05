@@ -20,6 +20,8 @@ import Describe1Image from "@assets/images/describe1.png";
 import Describe2Image from "@assets/images/describe2.png";
 import BackgroundImage_sonny from "@assets/images/background_sonny.png";
 import BackgroundImage_karina from "@assets/images/background_karina.png";
+import BackgroundImage_chloe from "@assets/images/background_chloe.png";
+import BackgroundImage_dohyung from "@assets/images/background_dohyung.png";
 
 // SweetAlert2 임포트
 import Swal from "sweetalert2";
@@ -79,6 +81,10 @@ const AiConsultChannelPage = () => {
     BackgroundImage = BackgroundImage_sonny;
   } else if (selectedAvatar === "karina") {
     BackgroundImage = BackgroundImage_karina;
+  } else if (selectedAvatar === "chloe") {
+    BackgroundImage = BackgroundImage_chloe;
+  } else if (selectedAvatar === "dohyung") {
+    BackgroundImage = BackgroundImage_dohyung;
   } else {
     BackgroundImage = BackgroundImage_sonny;
   }
