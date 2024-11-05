@@ -276,6 +276,32 @@ const SeamlessVideoPlayer = ({
       style={{ width: "100%", height: "100%" }}
       onPlay={onStart}
       onError={onError}
+      onPause={() => {
+        console.log("SeamlessVideoPlayer: Video paused");
+        if (onError) {
+          onError(new Error("Video paused unexpectedly"));
+        }
+      }}
+      onStalled={() => {
+        console.log("SeamlessVideoPlayer: Video stalled");
+        if (onError) {
+          onError(new Error("Video stalled"));
+        }
+      }}
+      onWaiting={() => {
+        console.log("SeamlessVideoPlayer: Video waiting");
+        // 비디오가 버퍼링 중일 수 있으므로 일정 시간 후에도 재생되지 않으면 에러 처리
+        setTimeout(() => {
+          if (
+            videoRef.current &&
+            videoRef.current.readyState < 3 // HAVE_FUTURE_DATA
+          ) {
+            if (onError) {
+              onError(new Error("Video stuck in waiting state"));
+            }
+          }
+        }, 3000); // 5초 후에 상태 확인
+      }}
     />
   );
 };
