@@ -902,8 +902,8 @@ const AiConsultChannelPage = () => {
         setOverlayVideo(noteSrc);
       }
     }
-
-    if (src && !isSeamlessPlaying && src !== "error") {
+    // 이 부분에서 isErrorPlaying 상태를 확인하여 SeamlessVideoPlayer가 다시 시작되지 않도록 함
+    if (src && !isSeamlessPlaying && src !== "error" && !isErrorPlaying) {
       console.log("시작하기 seamless 비디오 재생");
       setIsSeamlessPlaying(true);
       setIsLoading(true);
@@ -923,7 +923,6 @@ const AiConsultChannelPage = () => {
     isErrorPlaying,
   ]);
 
-  // overlay 비디오 종료 핸들러
   const handleOverlayVideoEnd = useCallback(() => {
     console.log("오버레이 비디오 종료");
     if (isGreetingsPlaying) {
@@ -932,13 +931,7 @@ const AiConsultChannelPage = () => {
       dispatch(clearNotePlaying());
     } else if (isErrorPlaying) {
       dispatch(clearErrorPlaying());
-      // 에러 비디오 재생 후 기본 비디오 재생 재시작
-      const videoElement = defaultVideoRef.current;
-      if (videoElement) {
-        videoElement.play().catch((error) => {
-          console.error("기본 비디오 재생 재시작 실패:", error);
-        });
-      }
+      setIsErrorOccurred(false); // 에러 상태 초기화
     }
     setOverlayVideo(null);
     setIsAnswerButtonEnabled(true);
@@ -951,11 +944,12 @@ const AiConsultChannelPage = () => {
   }, []);
 
   const handleSeamlessVideoError = useCallback(() => {
-    console.error("Seamless video failed to play");
+    console.error("Seamless video failed to play or stopped unexpectedly");
     setIsSeamlessPlaying(false);
     setIsLoading(false);
     setIsErrorOccurred(true);
-  }, []);
+    dispatch(clearAudioSrc()); // src를 초기화하여 다시 시작되지 않도록 함
+  }, [dispatch]);
 
   // seamless 비디오 핸들러들
   const handleSeamlessVideoEnd = useCallback(() => {
