@@ -10,6 +10,8 @@ import {
   setGreetingsPlayed,
   setNotePlaying,
   clearNotePlaying,
+  setErrorPlaying,
+  clearErrorPlaying,
 } from "@store/ai/aiConsultSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
@@ -49,6 +51,7 @@ const AiConsultChannelPage = () => {
   const [showInstruction, setShowInstruction] = useState(true);
   const [isSeamlessLoading, setIsSeamlessLoading] = useState(false);
   const [timestampsArray, setTimestampsArray] = useState([]); // 타임스탬프 저장 배열 추가
+  const [isErrorOccurred, setIsErrorOccurred] = useState(false);
 
   const greetingsVideoRef = useRef(null);
   const isRecordingAllowed =
@@ -67,6 +70,9 @@ const AiConsultChannelPage = () => {
     (state) => state.aiConsult.audio.upload.isLoading
   );
   const sessionStatus = useSelector((state) => state.aiConsult.sessionStatus);
+  const isErrorPlaying = useSelector(
+    (state) => state.aiConsult.audio.isErrorPlaying
+  );
 
   // 선택된 아바타에 따른 소스 가져오기
   const defaultSrc = audioSources[selectedAvatar]?.defaultSrc;
@@ -182,6 +188,15 @@ const AiConsultChannelPage = () => {
   // }, []);
 
   useEffect(() => {
+    if (isErrorOccurred) {
+      console.log("Error occurred, playing error video");
+      setOverlayVideo(errorSrc);
+      setIsErrorOccurred(false);
+      dispatch(setErrorPlaying());
+    }
+  }, [isErrorOccurred, errorSrc, dispatch]);
+
+  useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
         e.preventDefault();
@@ -231,7 +246,7 @@ const AiConsultChannelPage = () => {
 
   // 상태 변화에 따른 비디오 재생 로직
   useEffect(() => {
-    if (!overlayVideo) {
+    if (!overlayVideo && !isErrorPlaying) {
       if (isGreetingsPlaying) {
         // Determine which source to use based on sessionStatus
         console.log("sessionStatus: ", sessionStatus);
@@ -278,6 +293,7 @@ const AiConsultChannelPage = () => {
     isSeamlessPlaying,
     dispatch,
     sessionStatus, // Added to dependencies
+    isErrorPlaying,
   ]);
 
   // overlay 비디오 종료 핸들러
@@ -287,13 +303,30 @@ const AiConsultChannelPage = () => {
       dispatch(setGreetingsPlayed());
     } else if (isNotePlaying) {
       dispatch(clearNotePlaying());
-    } else if (src === "error") {
-      console.log("에러 비디오 재생 종료");
-      dispatch(clearAudioSrc()); // src를 초기화하여 에러 비디오가 다시 재생되지 않도록 함
+    } else if (isErrorPlaying) {
+      dispatch(clearErrorPlaying());
     }
     setOverlayVideo(null);
     setIsAnswerButtonEnabled(true);
-  }, [dispatch, isGreetingsPlaying, isNotePlaying, src]);
+  }, [dispatch, isGreetingsPlaying, isNotePlaying, isErrorPlaying]);
+
+  // Error handlers for videos
+  const handleDefaultVideoError = useCallback(() => {
+    console.error("Default video failed to play");
+    setIsErrorOccurred(true);
+  }, []);
+
+  const handleOverlayVideoError = useCallback(() => {
+    console.error("Overlay video failed to play");
+    setIsErrorOccurred(true);
+  }, []);
+
+  const handleSeamlessVideoError = useCallback(() => {
+    console.error("Seamless video failed to play");
+    setIsSeamlessPlaying(false);
+    setIsLoading(false);
+    setIsErrorOccurred(true);
+  }, []);
 
   // seamless 비디오 핸들러들
   const handleSeamlessVideoEnd = useCallback(() => {
@@ -431,6 +464,7 @@ const AiConsultChannelPage = () => {
           muted
           position="relative"
           zIndex={1}
+          onError={handleDefaultVideoError} // Added error handler
         />
 
         {/* overlay 비디오 (greetings, note, error 등) */}
@@ -448,7 +482,7 @@ const AiConsultChannelPage = () => {
               autoPlay
               onEnded={handleOverlayVideoEnd}
               onPlay={handleGreetingsVideoPlay}
-              onError={handleGreetingsVideoError}
+              onError={handleOverlayVideoError} // Added error handler
               zIndex={2}
             />
           </Fade>
@@ -471,6 +505,7 @@ const AiConsultChannelPage = () => {
               onEnded={handleAllVideosEnded}
               onStart={handleSeamlessVideoStart}
               onAllVideosEnded={handleAllVideosEnded}
+              onError={handleSeamlessVideoError} // Added error handler
             />
           </Box>
         )}

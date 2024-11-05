@@ -33,6 +33,7 @@ const initialState = {
     },
     isNotePlaying: false,
     isGreetingsPlaying: true,
+    isErrorPlaying: false,
     src: "",
     upload: {
       error: null,
@@ -133,6 +134,12 @@ export const aiConsultSlice = createSlice({
     clearNotePlaying(state) {
       state.audio.isNotePlaying = false;
     },
+    setErrorPlaying: (state) => {
+      state.audio.isErrorPlaying = true;
+    },
+    clearErrorPlaying: (state) => {
+      state.audio.isErrorPlaying = false;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(uploadRequest.pending, (state) => {
@@ -184,6 +191,8 @@ export const {
   setGreetingsPlayed,
   setNotePlaying,
   clearNotePlaying,
+  setErrorPlaying, // New action
+  clearErrorPlaying, // New action
 } = aiConsultSlice.actions;
 
 export default aiConsultSlice.reducer;

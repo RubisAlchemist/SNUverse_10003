@@ -7,6 +7,7 @@ const SeamlessVideoPlayer = ({
   onStart,
   onAllVideosEnded,
   onLoadingChange,
+  onError,
 }) => {
   const videoRef = useRef(null);
   const mediaSourceRef = useRef(null);
@@ -119,6 +120,9 @@ const SeamlessVideoPlayer = ({
         }
         await sleep(RETRY_DELAY);
         // Continue loop to retry
+        if (retryCounts.current[index] >= 5 && onError) {
+          onError(error);
+        }
       }
     }
 
@@ -178,6 +182,9 @@ const SeamlessVideoPlayer = ({
         console.error("Error appending buffer:", error);
         // Re-queue the video and retry later
         queuedVideos.current.unshift(nextVideo);
+        if (onError) {
+          onError(error);
+        }
       }
     } else if (isStopped.current && queuedVideos.current.length === 0) {
       // If we've been instructed to stop and the buffer is empty, end the stream
@@ -268,6 +275,7 @@ const SeamlessVideoPlayer = ({
       ref={videoRef}
       style={{ width: "100%", height: "100%" }}
       onPlay={onStart}
+      onError={onError}
     />
   );
 };
