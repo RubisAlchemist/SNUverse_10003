@@ -736,8 +736,6 @@ const AiConsultChannelPage = () => {
   const noteSrc = audioSources[selectedAvatar]?.noteSrc;
   const existingSrc = audioSources[selectedAvatar]?.existingSrc;
 
-  const seamlessVideoRef = useRef(null);
-
   // 배경 이미지 설정
   let BackgroundImage;
   if (selectedAvatar === "sonny") {
@@ -869,7 +867,6 @@ const AiConsultChannelPage = () => {
     if (isAudioErrorOccurred) {
       console.log("Microphone input device changed, playing error video");
       setOverlayVideo(errorSrc);
-      setIsSeamlessPlaying(false); // 추가된 부분
       dispatch(setErrorPlaying());
       dispatch(clearAudioErrorOccurred()); // 에러 상태 초기화
     }
@@ -1061,18 +1058,11 @@ const AiConsultChannelPage = () => {
   useEffect(() => {
     const handleDeviceChange = () => {
       console.log("Media devices changed.");
-      // 기본 비디오 재생 재시작
+      // 비디오 재생 재시작 또는 필요한 처리 수행
       const videoElement = defaultVideoRef.current;
       if (videoElement && videoElement.paused) {
         videoElement.play().catch((error) => {
           console.error("기본 비디오 재생 재시작 실패:", error);
-        });
-      }
-      // SeamlessVideoPlayer 비디오 재생 재시작
-      const seamlessVideoElement = seamlessVideoRef.current;
-      if (seamlessVideoElement && seamlessVideoElement.paused) {
-        seamlessVideoElement.play().catch((error) => {
-          console.error("SeamlessVideoPlayer 재생 재시작 실패:", error);
         });
       }
     };
@@ -1164,7 +1154,6 @@ const AiConsultChannelPage = () => {
             sx={{ border: "none" }}
           >
             <SeamlessVideoPlayer
-              ref={seamlessVideoRef} // 추가된 부분
               initialVideoUrl={src}
               isVisible={isSeamlessPlaying}
               onEnded={handleAllVideosEnded}
