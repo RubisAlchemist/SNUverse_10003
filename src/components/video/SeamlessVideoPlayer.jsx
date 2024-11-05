@@ -272,24 +272,18 @@ const SeamlessVideoPlayer = ({
 
   return (
     <video
-      ref={videoRef}
+      ref={(node) => {
+        videoRef.current = node;
+        if (typeof ref === "function") {
+          ref(node);
+        } else if (ref) {
+          ref.current = node;
+        }
+      }}
       style={{ width: "100%", height: "100%" }}
       onPlay={onStart}
       onError={onError}
-      // 비디오 일시 중지나 재생 중단 이벤트 핸들러에서 에러를 트리거하지 않음
-      // 필요하다면 이벤트 핸들러를 제거하거나 로그만 남김
-      onPause={() => {
-        console.log("SeamlessVideoPlayer: Video paused");
-        // 에러 콜백 호출하지 않음
-      }}
-      onStalled={() => {
-        console.log("SeamlessVideoPlayer: Video stalled");
-        // 에러 콜백 호출하지 않음
-      }}
-      onWaiting={() => {
-        console.log("SeamlessVideoPlayer: Video waiting");
-        // 에러 콜백 호출하지 않음
-      }}
+      // 필요한 이벤트 핸들러
     />
   );
 };
