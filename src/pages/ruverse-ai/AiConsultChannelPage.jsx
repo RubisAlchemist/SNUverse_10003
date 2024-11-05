@@ -648,7 +648,6 @@
 // export default AiConsultChannelPage;
 
 // AiConsultChannelPage.js
-
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   AudioRecorder,
@@ -661,10 +660,6 @@ import {
   setGreetingsPlayed,
   setNotePlaying,
   clearNotePlaying,
-  setErrorPlaying,
-  clearErrorPlaying,
-  setAudioErrorOccurred,
-  clearAudioErrorOccurred,
 } from "@store/ai/aiConsultSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
@@ -675,6 +670,8 @@ import Describe1Image from "@assets/images/describe1.png";
 import Describe2Image from "@assets/images/describe2.png";
 import BackgroundImage_sonny from "@assets/images/background_sonny.png";
 import BackgroundImage_karina from "@assets/images/background_karina.png";
+import BackgroundImage_chloe from "@assets/images/background_chloe.png";
+import BackgroundImage_dohyung from "@assets/images/background_dohyung.png";
 
 // SweetAlert2 임포트
 import Swal from "sweetalert2";
@@ -700,9 +697,9 @@ const AiConsultChannelPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnswerButtonEnabled, setIsAnswerButtonEnabled] = useState(true);
   const [showInstruction, setShowInstruction] = useState(true);
+  const [isSeamlessLoading, setIsSeamlessLoading] = useState(false);
   const [timestampsArray, setTimestampsArray] = useState([]); // 타임스탬프 저장 배열 추가
 
-  const defaultVideoRef = useRef(null);
   const greetingsVideoRef = useRef(null);
   const isRecordingAllowed =
     overlayVideo === null && !isSeamlessPlaying && !isLoading;
@@ -720,12 +717,6 @@ const AiConsultChannelPage = () => {
     (state) => state.aiConsult.audio.upload.isLoading
   );
   const sessionStatus = useSelector((state) => state.aiConsult.sessionStatus);
-  const isErrorPlaying = useSelector(
-    (state) => state.aiConsult.audio.isErrorPlaying
-  );
-  const isAudioErrorOccurred = useSelector(
-    (state) => state.aiConsult.audio.isErrorOccurred
-  );
 
   // 선택된 아바타에 따른 소스 가져오기
   const defaultSrc = audioSources[selectedAvatar]?.defaultSrc;
@@ -740,6 +731,10 @@ const AiConsultChannelPage = () => {
     BackgroundImage = BackgroundImage_sonny;
   } else if (selectedAvatar === "karina") {
     BackgroundImage = BackgroundImage_karina;
+  } else if (selectedAvatar === "chloe") {
+    BackgroundImage = BackgroundImage_chloe;
+  } else if (selectedAvatar === "dohyung") {
+    BackgroundImage = BackgroundImage_dohyung;
   } else {
     BackgroundImage = BackgroundImage_sonny;
   }
@@ -824,39 +819,18 @@ const AiConsultChannelPage = () => {
     });
   }, []);
 
-  // 비디오 재생 상태 모니터링을 위한 핸들러들
-  const handleDefaultVideoPause = useCallback(() => {
-    console.log("기본 비디오가 일시 중지되었습니다.");
-    if (
-      defaultVideoRef.current &&
-      !defaultVideoRef.current.seeking &&
-      !defaultVideoRef.current.ended
-    ) {
-      // 필요한 경우 추가 작업 수행
-    }
-  }, []);
+  // Reload page once on first load
+  // useEffect(() => {
+  //   const hasReloaded = sessionStorage.getItem("hasReloaded");
+  //   if (!hasReloaded) {
+  //     console.log("페이지가 처음 로드되어 리로드합니다.");
+  //     sessionStorage.setItem("hasReloaded", "true");
+  //     window.location.reload();
+  //   } else {
+  //     console.log("페이지가 이미 리로드되었습니다.");
+  //   }
+  // }, []);
 
-  const handleDefaultVideoStalled = useCallback(() => {
-    console.log("기본 비디오 재생이 멈췄습니다.");
-    // 필요한 경우 추가 작업 수행
-  }, []);
-
-  const handleDefaultVideoError = useCallback(() => {
-    console.error("기본 비디오 재생 오류");
-    // 필요한 경우 추가 작업 수행
-  }, []);
-
-  // 에러 발생 시 처리
-  useEffect(() => {
-    if (isAudioErrorOccurred) {
-      console.log("Microphone input device changed, playing error video");
-      setOverlayVideo(errorSrc);
-      dispatch(setErrorPlaying());
-      dispatch(clearAudioErrorOccurred()); // 에러 상태 초기화
-    }
-  }, [isAudioErrorOccurred, errorSrc, dispatch]);
-
-  // 페이지 새로고침(F5, Ctrl+R) 방지
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.key === "F5" || (e.ctrlKey && e.key === "r")) {
@@ -870,9 +844,44 @@ const AiConsultChannelPage = () => {
     };
   }, [handleRefresh]);
 
+  // // 상태 변화에 따른 비디오 재생 로직
+  // useEffect(() => {
+  //   if (!overlayVideo) {
+  //     if (isGreetingsPlaying && greetingsSrc) {
+  //       console.log("인사말 비디오 재생");
+  //       setOverlayVideo(greetingsSrc);
+  //       setIsSeamlessPlaying(false);
+  //     } else if (src === "error") {
+  //       console.log("에러 비디오 재생");
+  //       setOverlayVideo(errorSrc);
+  //       setIsSeamlessPlaying(false);
+  //       // 에러 비디오 재생을 표시하기 위해 상태 설정
+  //     } else if (isNotePlaying && noteSrc) {
+  //       console.log("노트 비디오 재생");
+  //       setOverlayVideo(noteSrc);
+  //     }
+  //   }
+
+  //   if (src && !isSeamlessPlaying && src !== "error") {
+  //     console.log("시작하기 seamless 비디오 재생");
+  //     setIsSeamlessPlaying(true);
+  //     setIsLoading(true);
+  //   }
+  // }, [
+  //   overlayVideo,
+  //   isGreetingsPlaying,
+  //   greetingsSrc,
+  //   src,
+  //   errorSrc,
+  //   isNotePlaying,
+  //   noteSrc,
+  //   isSeamlessPlaying,
+  //   dispatch,
+  // ]);
+
   // 상태 변화에 따른 비디오 재생 로직
   useEffect(() => {
-    if (!overlayVideo && !isErrorPlaying) {
+    if (!overlayVideo) {
       if (isGreetingsPlaying) {
         // Determine which source to use based on sessionStatus
         console.log("sessionStatus: ", sessionStatus);
@@ -891,13 +900,18 @@ const AiConsultChannelPage = () => {
         } else {
           console.warn("선택된 인사말 비디오 소스가 없습니다.");
         }
+      } else if (src === "error") {
+        console.log("에러 비디오 재생");
+        setOverlayVideo(errorSrc);
+        setIsSeamlessPlaying(false);
+        // 에러 비디오 재생을 표시하기 위해 상태 설정
       } else if (isNotePlaying && noteSrc) {
         console.log("노트 비디오 재생");
         setOverlayVideo(noteSrc);
       }
     }
 
-    if (src && !isSeamlessPlaying && src !== "error" && !isErrorPlaying) {
+    if (src && !isSeamlessPlaying && src !== "error") {
       console.log("시작하기 seamless 비디오 재생");
       setIsSeamlessPlaying(true);
       setIsLoading(true);
@@ -906,44 +920,30 @@ const AiConsultChannelPage = () => {
     overlayVideo,
     isGreetingsPlaying,
     greetingsSrc,
-    existingSrc,
+    existingSrc, // 올바른 greetingsSrc 추가
     src,
     errorSrc,
     isNotePlaying,
     noteSrc,
     isSeamlessPlaying,
     dispatch,
-    sessionStatus,
-    isErrorPlaying,
+    sessionStatus, // Added to dependencies
   ]);
 
+  // overlay 비디오 종료 핸들러
   const handleOverlayVideoEnd = useCallback(() => {
-    console.log("오버레이 비디오 종료");
+    console.log("Overlay 비디오 종료");
     if (isGreetingsPlaying) {
       dispatch(setGreetingsPlayed());
     } else if (isNotePlaying) {
       dispatch(clearNotePlaying());
-    } else if (isErrorPlaying) {
-      dispatch(clearErrorPlaying());
+    } else if (src === "error") {
+      console.log("에러 비디오 재생 종료");
+      dispatch(clearAudioSrc()); // src를 초기화하여 에러 비디오가 다시 재생되지 않도록 함
     }
     setOverlayVideo(null);
     setIsAnswerButtonEnabled(true);
-  }, [dispatch, isGreetingsPlaying, isNotePlaying, isErrorPlaying]);
-
-  // Error handlers for videos
-  const handleOverlayVideoError = useCallback(() => {
-    console.error("Overlay video failed to play");
-    // 필요한 경우 추가 작업 수행
-  }, []);
-
-  const handleSeamlessVideoError = useCallback(() => {
-    console.error("Seamless video failed to play or stopped unexpectedly");
-    setIsSeamlessPlaying(false);
-    setIsLoading(false);
-    setOverlayVideo(errorSrc);
-    dispatch(setErrorPlaying());
-    dispatch(clearAudioSrc()); // src를 초기화하여 다시 시작되지 않도록 함
-  }, [dispatch, errorSrc]);
+  }, [dispatch, isGreetingsPlaying, isNotePlaying, src]);
 
   // seamless 비디오 핸들러들
   const handleSeamlessVideoEnd = useCallback(() => {
@@ -997,14 +997,15 @@ const AiConsultChannelPage = () => {
     ]);
   }, []);
 
-  // 뒤로 가기 방지 및 팝업 처리
   useEffect(() => {
     // 컴포넌트가 마운트될 때 현재 상태를 히스토리 스택에 추가
     window.history.pushState({ preventPop: true }, "");
 
     const handlePopState = (event) => {
       // preventPop이 true인 경우, 사용자에게 확인 팝업을 표시
-      if (event.state && event.state.preventPop) {
+      console.log(event.state);
+      console.log(event.state.preventPop);
+      if (event.state || event.state.preventPop) {
         // SweetAlert2를 사용한 팝업 표시
         MySwal.fire({
           title: "알림",
@@ -1026,21 +1027,21 @@ const AiConsultChannelPage = () => {
     };
   }, []);
 
-  // 오디오 출력 장치 변경 감지 및 처리
-  useEffect(() => {
-    const handleDeviceChange = () => {
-      console.log("Media devices changed.");
-      // 필요한 경우 추가 작업 수행
-    };
-    navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
+  // 페이지 새로고침 방지 핸들러(브라우저의 새로고침 버튼)
+  // useEffect(() => {
+  //   const handleBeforeUnload = (e) => {
+  //     e.preventDefault();
+  //     // Chrome requires returnValue to be set
+  //     e.returnValue = "";
+  //     // Note: Custom messages are not supported by most browsers
+  //   };
 
-    return () => {
-      navigator.mediaDevices.removeEventListener(
-        "devicechange",
-        handleDeviceChange
-      );
-    };
-  }, []);
+  //   window.addEventListener("beforeunload", handleBeforeUnload);
+
+  //   return () => {
+  //     window.removeEventListener("beforeunload", handleBeforeUnload);
+  //   };
+  // }, []);
 
   return (
     <Box width="100%" height="100vh">
@@ -1070,7 +1071,6 @@ const AiConsultChannelPage = () => {
         {/* default 비디오 */}
         <Box
           component="video"
-          ref={defaultVideoRef}
           width="100%"
           height="100%"
           top={0}
@@ -1078,12 +1078,9 @@ const AiConsultChannelPage = () => {
           src={defaultSrc}
           loop
           autoPlay
-          muted // 기본 비디오는 muted 설정
+          muted
           position="relative"
           zIndex={1}
-          onPause={handleDefaultVideoPause}
-          onStalled={handleDefaultVideoStalled}
-          onError={handleDefaultVideoError}
         />
 
         {/* overlay 비디오 (greetings, note, error 등) */}
@@ -1099,10 +1096,9 @@ const AiConsultChannelPage = () => {
               ref={greetingsVideoRef}
               src={overlayVideo}
               autoPlay
-              // 오버레이 비디오는 muted를 제거하여 소리가 나오도록 함
               onEnded={handleOverlayVideoEnd}
               onPlay={handleGreetingsVideoPlay}
-              onError={handleOverlayVideoError}
+              onError={handleGreetingsVideoError}
               zIndex={2}
             />
           </Fade>
@@ -1125,7 +1121,6 @@ const AiConsultChannelPage = () => {
               onEnded={handleAllVideosEnded}
               onStart={handleSeamlessVideoStart}
               onAllVideosEnded={handleAllVideosEnded}
-              onError={handleSeamlessVideoError}
             />
           </Box>
         )}
@@ -1145,6 +1140,18 @@ const AiConsultChannelPage = () => {
           >
             <CircularProgress />
           </Box>
+        )}
+
+        {isSeamlessLoading && (
+          <Box
+            position="absolute"
+            top={0}
+            left={0}
+            width="100%"
+            height="100%"
+            bgcolor="transparent"
+            zIndex={4}
+          />
         )}
       </Box>
 
@@ -1170,13 +1177,34 @@ const AiConsultChannelPage = () => {
         borderTop={1}
         borderColor={"#ccc"}
       >
+        {/* {showInstruction && (
+          <Box
+            position="absolute"
+            margin="auto"
+            display="flex"
+            sx={{
+              transform: "translateX(-65%)",
+              height: { xs: "24px", sm: "40px", md: "50px", lg: "60px" },
+            }}
+          >
+            <img
+              src={Describe1Image}
+              alt="describe1"
+              style={{
+                width: "auto",
+                height: "100%",
+              }}
+            />
+          </Box>
+        )} */}
+
         {/* 오디오 레코더 */}
         <AudioRecorder
           uname={uname}
           phoneNumber={phoneNumber}
           selectedAvatar={selectedAvatar}
           onRecordingStart={handleRecordingStart}
-          onRecordingStop={handleRecordingStop}
+          onRecordingStop={handleRecordingStop} // 추가된 부분
           isRecordingAllowed={isRecordingAllowed}
         />
 
