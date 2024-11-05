@@ -18,8 +18,6 @@ import { convert } from "hangul-romanization";
 import { Header, HEADER_HEIGHT } from "@components/index";
 import avatarSonny from "@assets/images/avatar_sonny.png";
 import avatarkarina from "@assets/images/avatar_karina.png";
-import avatarChloe from "@assets/images/avatar_chloe.png";
-import avatarDohyung from "@assets/images/avatar_dohyung.png";
 import { useDispatch, useSelector } from "react-redux";
 import { uploadNewSessionRequest } from "@store/ai/aiConsultSlice";
 import styled from "styled-components";
@@ -214,8 +212,6 @@ const AiConsultEntryPageRe = () => {
             {[
               { name: "sonny", src: avatarSonny },
               { name: "karina", src: avatarkarina },
-              { name: "chloe", src: avatarChloe },
-              { name: "dohyung", src: avatarDohyung },
             ].map((avatar) => (
               <Box
                 key={avatar.name}
