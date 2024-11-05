@@ -647,6 +647,8 @@
 
 // export default AiConsultChannelPage;
 
+// AiConsultChannelPage.js
+
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   AudioRecorder,
@@ -700,9 +702,7 @@ const AiConsultChannelPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAnswerButtonEnabled, setIsAnswerButtonEnabled] = useState(true);
   const [showInstruction, setShowInstruction] = useState(true);
-  const [isSeamlessLoading, setIsSeamlessLoading] = useState(false);
   const [timestampsArray, setTimestampsArray] = useState([]); // 타임스탬프 저장 배열 추가
-  const [isErrorOccurred, setIsErrorOccurred] = useState(false);
 
   const defaultVideoRef = useRef(null);
   const greetingsVideoRef = useRef(null);
@@ -838,29 +838,19 @@ const AiConsultChannelPage = () => {
       !defaultVideoRef.current.seeking &&
       !defaultVideoRef.current.ended
     ) {
-      setIsErrorOccurred(true);
+      // 필요한 경우 추가 작업 수행
     }
   }, []);
 
   const handleDefaultVideoStalled = useCallback(() => {
     console.log("기본 비디오 재생이 멈췄습니다.");
-    setIsErrorOccurred(true);
+    // 필요한 경우 추가 작업 수행
   }, []);
 
   const handleDefaultVideoError = useCallback(() => {
     console.error("기본 비디오 재생 오류");
-    setIsErrorOccurred(true);
+    // 필요한 경우 추가 작업 수행
   }, []);
-
-  // 에러 발생 시 처리
-  useEffect(() => {
-    if (isErrorOccurred) {
-      console.log("Error occurred, playing error video");
-      setOverlayVideo(errorSrc);
-      setIsErrorOccurred(false);
-      dispatch(setErrorPlaying());
-    }
-  }, [isErrorOccurred, errorSrc, dispatch]);
 
   // 에러 발생 시 처리
   useEffect(() => {
@@ -907,24 +897,13 @@ const AiConsultChannelPage = () => {
         } else {
           console.warn("선택된 인사말 비디오 소스가 없습니다.");
         }
-      } else if (src === "error") {
-        console.log("에러 비디오 재생");
-        setOverlayVideo(errorSrc);
-        setIsSeamlessPlaying(false);
-        // 에러 비디오 재생을 표시하기 위해 상태 설정
       } else if (isNotePlaying && noteSrc) {
         console.log("노트 비디오 재생");
         setOverlayVideo(noteSrc);
       }
     }
-    // 이 부분에서 isErrorPlaying 상태를 확인하여 SeamlessVideoPlayer가 다시 시작되지 않도록 함
-    if (
-      src &&
-      !isSeamlessPlaying &&
-      src !== "error" &&
-      !isErrorPlaying &&
-      !isErrorOccurred
-    ) {
+
+    if (src && !isSeamlessPlaying && src !== "error" && !isErrorPlaying) {
       console.log("시작하기 seamless 비디오 재생");
       setIsSeamlessPlaying(true);
       setIsLoading(true);
@@ -942,7 +921,6 @@ const AiConsultChannelPage = () => {
     dispatch,
     sessionStatus,
     isErrorPlaying,
-    isErrorOccurred,
   ]);
 
   const handleOverlayVideoEnd = useCallback(() => {
@@ -953,7 +931,6 @@ const AiConsultChannelPage = () => {
       dispatch(clearNotePlaying());
     } else if (isErrorPlaying) {
       dispatch(clearErrorPlaying());
-      setIsErrorOccurred(false); // 에러 상태 초기화
     }
     setOverlayVideo(null);
     setIsAnswerButtonEnabled(true);
@@ -962,16 +939,17 @@ const AiConsultChannelPage = () => {
   // Error handlers for videos
   const handleOverlayVideoError = useCallback(() => {
     console.error("Overlay video failed to play");
-    setIsErrorOccurred(true);
+    // 필요한 경우 추가 작업 수행
   }, []);
 
   const handleSeamlessVideoError = useCallback(() => {
     console.error("Seamless video failed to play or stopped unexpectedly");
     setIsSeamlessPlaying(false);
     setIsLoading(false);
-    setIsErrorOccurred(true);
+    setOverlayVideo(errorSrc);
+    dispatch(setErrorPlaying());
     dispatch(clearAudioSrc()); // src를 초기화하여 다시 시작되지 않도록 함
-  }, [dispatch]);
+  }, [dispatch, errorSrc]);
 
   // seamless 비디오 핸들러들
   const handleSeamlessVideoEnd = useCallback(() => {
@@ -1058,13 +1036,7 @@ const AiConsultChannelPage = () => {
   useEffect(() => {
     const handleDeviceChange = () => {
       console.log("Media devices changed.");
-      // 비디오 재생 재시작 또는 필요한 처리 수행
-      const videoElement = defaultVideoRef.current;
-      if (videoElement && videoElement.paused) {
-        videoElement.play().catch((error) => {
-          console.error("기본 비디오 재생 재시작 실패:", error);
-        });
-      }
+      // 필요한 경우 추가 작업 수행
     };
     navigator.mediaDevices.addEventListener("devicechange", handleDeviceChange);
 
@@ -1179,18 +1151,6 @@ const AiConsultChannelPage = () => {
           >
             <CircularProgress />
           </Box>
-        )}
-
-        {isSeamlessLoading && (
-          <Box
-            position="absolute"
-            top={0}
-            left={0}
-            width="100%"
-            height="100%"
-            bgcolor="transparent"
-            zIndex={4}
-          />
         )}
       </Box>
 
