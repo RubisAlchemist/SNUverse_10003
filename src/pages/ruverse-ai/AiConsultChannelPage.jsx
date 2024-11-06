@@ -549,7 +549,7 @@ const AiConsultChannelPage = () => {
         display="flex"
         justifyContent="center"
         alignItems="center"
-        height="10%"
+        height="8%"
         borderTop={1}
         borderColor={"#ccc"}
         //sx={{ minHeight: "150px" }} // 최소 높이 설정
