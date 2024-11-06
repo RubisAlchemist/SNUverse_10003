@@ -667,64 +667,17 @@ const AudioRecorder = ({
     dispatch(setNotePlaying());
   };
 
-  // return (
-  //   <div style={{ textAlign: "center", marginTop: "10px" }}>
-  //     {/* Recording Icon */}
-  //     <div
-  //       style={{
-  //         width: "70px",
-  //         height: "70px",
-  //         display: "flex",
-  //         justifyContent: "center",
-  //         alignItems: "center",
-  //         margin: "0 auto",
-  //       }}
-  //     >
-  //       {!isRecordingAllowed ? (
-  //         <MicOffIcon className={classes.icon} style={{ color: "gray" }} />
-  //       ) : (
-  //         <GraphicEqIcon
-  //           className={`${classes.icon} ${isRecording ? classes.animate : ""}`}
-  //           style={{ color: isRecording ? "#4caf50" : "gray" }}
-  //         />
-  //       )}
-  //     </div>
-  //     <p
-  //       style={{
-  //         marginTop: "0px",
-  //         fontSize: "23px",
-  //         color: isRecording ? "#4caf50" : "gray",
-  //         minHeight: "1em",
-  //       }}
-  //     >
-  //       {getRecordingStatusMessage()}
-  //     </p>
-
-  //     {/* Error Message */}
-  //     {error && <p style={{ color: "red" }}>{error}</p>}
-  //   </div>
-  // );
   return (
-    <div
-      style={{
-        textAlign: "center",
-        marginTop: "10px",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-      }}
-    >
-      {/* 아이콘 컨테이너 */}
+    <div style={{ textAlign: "center", marginTop: "10px" }}>
+      {/* Recording Icon */}
       <div
         style={{
-          width: "70px",
+          width: "60px",
           height: "60px",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           margin: "0 auto",
-          marginTop: "5px",
         }}
       >
         {!isRecordingAllowed ? (
@@ -736,27 +689,74 @@ const AudioRecorder = ({
           />
         )}
       </div>
-      {/* 메시지 컨테이너 */}
-      <div
+      <p
         style={{
-          minHeight: "1em",
           marginTop: "0px",
+          fontSize: "18px",
+          color: isRecording ? "#4caf50" : "gray",
+          minHeight: "1em",
         }}
       >
-        <p
-          style={{
-            fontSize: "20px",
-            color: isRecording ? "#4caf50" : "gray",
-            margin: 0,
-          }}
-        >
-          {getRecordingStatusMessage()}
-        </p>
-      </div>
-      {/* 에러 메시지 */}
+        {getRecordingStatusMessage()}
+      </p>
+
+      {/* Error Message */}
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
+  // return (
+  //   <div
+  //     style={{
+  //       textAlign: "center",
+  //       marginTop: "10px",
+  //       height: "100%",
+  //       display: "flex",
+  //       flexDirection: "column",
+  //       justifyContent: "center",
+  //     }}
+  //   >
+  //     {/* 아이콘 컨테이너 */}
+  //     <div
+  //       style={{
+  //         width: "70px",
+  //         height: "60px",
+  //         display: "flex",
+  //         justifyContent: "center",
+  //         alignItems: "center",
+  //         margin: "0 auto",
+  //         marginTop: "5px",
+  //       }}
+  //     >
+  //       {!isRecordingAllowed ? (
+  //         <MicOffIcon className={classes.icon} style={{ color: "gray" }} />
+  //       ) : (
+  //         <GraphicEqIcon
+  //           className={`${classes.icon} ${isRecording ? classes.animate : ""}`}
+  //           style={{ color: isRecording ? "#4caf50" : "gray" }}
+  //         />
+  //       )}
+  //     </div>
+  //     {/* 메시지 컨테이너 */}
+  //     <div
+  //       style={{
+  //         minHeight: "1em",
+  //         marginTop: "0px",
+  //       }}
+  //     >
+  //       <p
+  //         style={{
+  //           fontSize: "20px",
+  //           color: isRecording ? "#4caf50" : "gray",
+  //           margin: 0,
+  //         }}
+  //       >
+  //         {getRecordingStatusMessage()}
+  //       </p>
+  //     </div>
+  //     {/* 에러 메시지 */}
+  //     {error && <p style={{ color: "red" }}>{error}</p>}
+  //   </div>
+  // );
 };
 
 AudioRecorder.propTypes = {
