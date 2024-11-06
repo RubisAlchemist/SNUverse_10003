@@ -552,6 +552,7 @@ const AiConsultChannelPage = () => {
         height="10%"
         borderTop={1}
         borderColor={"#ccc"}
+        sx={{ minHeight: "150px" }} // 최소 높이 설정
       >
         {/* 오디오 레코더 */}
         <AudioRecorder

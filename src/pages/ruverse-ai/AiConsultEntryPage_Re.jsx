@@ -242,10 +242,10 @@ const AiConsultEntryPageRe = () => {
 
           <Box display="flex" justifyContent="center" gap={4}>
             {[
+              { name: "dohyung", src: avatarDohyung },
+              { name: "chloe", src: avatarChloe },
               { name: "sonny", src: avatarSonny },
               { name: "karina", src: avatarkarina },
-              { name: "chloe", src: avatarChloe },
-              { name: "dohyung", src: avatarDohyung },
             ].map((avatar) => (
               <Box
                 key={avatar.name}
