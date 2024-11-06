@@ -24,6 +24,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { uploadNewSessionRequest } from "@store/ai/aiConsultSlice";
 import styled from "styled-components";
 // import avatarJungkook from "@assets/images/avatar_jungkook.png";
+import hallwayChloeVideo from "@assets/videos/hallway_chloe.mp4";
+import hallwayDohyungVideo from "@assets/videos/hallway_dohyung.mp4";
+import hallwaySonnyVideo from "@assets/videos/hallway_sonny.mp4";
+import hallwayKarinaVideo from "@assets/videos/hallway_karina.mp4";
 
 // SweetAlert2 임포트
 import Swal from "sweetalert2";
@@ -33,81 +37,116 @@ const MySwal = withReactContent(Swal);
 
 const AiConsultEntryPageRe = () => {
   const dispatch = useDispatch();
-  const [selectedAvatar, setSelectedAvatar] = useState(null);
-  // const [uname, setUname] = useState({
-  //   value: "",
-  //   error: false,
-  // });
-  // const [phoneNumber, setPhoneNumber] = useState({
-  //   value: "",
-  //   error: false,
-  // });
+  const navigate = useNavigate();
   const location = useLocation();
+
+  // URL 쿼리 파라미터에서 uname과 phoneNumber 가져오기
   const queryParams = new URLSearchParams(location.search);
-  const uname = queryParams.get("uname");
-  const phoneNumber = queryParams.get("phoneNumber");
-  console.log(uname);
-  console.log(phoneNumber);
+  const unameParam = queryParams.get("uname") || "";
+  const phoneNumberParam = queryParams.get("phoneNumber") || "";
+
+  const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [isButtonEnabled, setIsButtonEnabled] = useState(false);
+
+  // 비디오 재생 상태 및 선택된 비디오
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [hallwayVideo, setHallwayVideo] = useState(null);
 
   const handleAvatarClick = (avatar) => {
     setSelectedAvatar((prev) => (prev === avatar ? null : avatar));
   };
 
-  const navigate = useNavigate();
-
-  const onChangeUname = (e) => {
-    const value = e.target.value;
-    const regex = /^[A-Za-z0-9ㄱ-ㅎㅏ-ㅣ가-힣]+$/;
-    const valid = regex.test(value);
-
-    setUname({
-      value,
-      error: !valid && value !== "",
-    });
-  };
-
-  const onChangePhoneNumber = (e) => {
-    const value = e.target.value;
-    const isValid = /^[0-9]{11}$/.test(value);
-
-    setPhoneNumber({
-      value,
-      error: value !== "" && !isValid,
-    });
-  };
-
   const onClickStart = async () => {
-    let unameToUse = uname;
-
-    const containsKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(uname);
-    if (containsKorean) {
-      unameToUse = convert(uname).replace(/\s+/g, "");
+    if (!unameParam || !phoneNumberParam) {
+      MySwal.fire({
+        title: "오류",
+        text: "이름과 전화번호가 필요합니다.",
+        icon: "error",
+        confirmButtonText: "확인",
+      });
+      return;
     }
+
+    let unameToUse = unameParam;
+    const containsKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(unameParam);
+    if (containsKorean) {
+      unameToUse = convert(unameParam).replace(/\s+/g, "");
+    }
+
     console.log(
       "uname: ",
       unameToUse,
       ", phoneNum: ",
-      phoneNumber,
+      phoneNumberParam,
       ", selectedAvatar: ",
       selectedAvatar
     );
-    const formData = new FormData();
 
+    const formData = new FormData();
     formData.append("uname", unameToUse);
-    formData.append("phoneNumber", phoneNumber);
+    formData.append("phoneNumber", phoneNumberParam);
     formData.append("selectedAvatar", selectedAvatar);
 
-    await dispatch(uploadNewSessionRequest(formData));
+    try {
+      await dispatch(uploadNewSessionRequest(formData)).unwrap();
+    } catch (error) {
+      console.error("세션 업로드 실패:", error);
+      MySwal.fire({
+        title: "오류",
+        text: "세션 업로드에 실패했습니다. 다시 시도해주세요.",
+        icon: "error",
+        confirmButtonText: "확인",
+      });
+      return;
+    }
 
+    let hallwayVideoSrc;
+    switch (selectedAvatar) {
+      case "sonny":
+        hallwayVideoSrc = hallwaySonnyVideo;
+        break;
+      case "karina":
+        hallwayVideoSrc = hallwayKarinaVideo;
+        break;
+      case "chloe":
+        hallwayVideoSrc = hallwayChloeVideo;
+        break;
+      case "dohyung":
+        hallwayVideoSrc = hallwayDohyungVideo;
+        break;
+      default:
+        hallwayVideoSrc = null;
+    }
+
+    if (hallwayVideoSrc) {
+      setHallwayVideo(hallwayVideoSrc);
+      setIsVideoPlaying(true);
+    } else {
+      // 아바타가 선택되지 않았거나 해당 비디오가 없는 경우 네비게이트
+      navigate(
+        `/ai-consult/${unameToUse}?phoneNumber=${phoneNumberParam}&selectedAvatar=${selectedAvatar}`
+      );
+    }
+  };
+
+  const onVideoEnded = () => {
+    let unameToUse = unameParam;
+    const containsKorean = /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(unameParam);
+    if (containsKorean) {
+      unameToUse = convert(unameParam).replace(/\s+/g, "");
+    }
     navigate(
-      `/ai-consult/${unameToUse}?phoneNumber=${phoneNumber}&selectedAvatar=${selectedAvatar}`
+      `/ai-consult/${unameToUse}?phoneNumber=${phoneNumberParam}&selectedAvatar=${selectedAvatar}`
     );
   };
 
-  // useEffect(() => {
-  //   window.location.reload();
-  // }, []);
+  // 비디오 재생 상태에 따른 버튼 활성화 로직
+  useEffect(() => {
+    const isNameValid = unameParam !== "";
+    const isPhoneValid = /^[0-9]{11}$/.test(phoneNumberParam);
+    const isAvatarSelected = selectedAvatar !== null;
+    setIsButtonEnabled(isNameValid && isPhoneValid && isAvatarSelected);
+  }, [unameParam, phoneNumberParam, selectedAvatar]);
 
   // 뒤로 가기 막기
   useEffect(() => {
@@ -139,14 +178,6 @@ const AiConsultEntryPageRe = () => {
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
-
-  useEffect(() => {
-    const isNameValid = uname.value !== "" && !uname.error;
-    const isPhoneValid = phoneNumber.value !== "" && !phoneNumber.error;
-    const isAvatarSelected = selectedAvatar !== null;
-
-    setIsButtonEnabled(isNameValid && isPhoneValid && isAvatarSelected);
-  }, [uname, phoneNumber, selectedAvatar]);
 
   return (
     <Container>
@@ -271,6 +302,17 @@ const AiConsultEntryPageRe = () => {
           </Box>
         </Stack>
       </Box>
+      {/* 영상 오버레이 */}
+      {isVideoPlaying && hallwayVideo && (
+        <VideoOverlay>
+          <TransitionVideo
+            src={hallwayVideo}
+            autoPlay
+            onEnded={onVideoEnded}
+            controls={false}
+          />
+        </VideoOverlay>
+      )}
     </Container>
   );
 };
@@ -281,6 +323,27 @@ const Container = styled.div`
   //padding-top: HEADER_HEIGHT;
   height: 100vh;
   flex-direction: column;
+`;
+
+// 영상 오버레이 스타일
+const VideoOverlay = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: black; /* 배경색을 검정으로 설정하여 영상이 더욱 돋보이게 함 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999; /* 다른 모든 요소보다 위에 표시 */
+`;
+
+// 영상 스타일
+const TransitionVideo = styled.video`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 export default AiConsultEntryPageRe;
