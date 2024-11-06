@@ -719,11 +719,12 @@ const AudioRecorder = ({
       <div
         style={{
           width: "70px",
-          height: "70px",
+          height: "60px",
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           margin: "0 auto",
+          marginTop: "5px",
         }}
       >
         {!isRecordingAllowed ? (
@@ -744,7 +745,7 @@ const AudioRecorder = ({
       >
         <p
           style={{
-            fontSize: "23px",
+            fontSize: "20px",
             color: isRecording ? "#4caf50" : "gray",
             margin: 0,
           }}
