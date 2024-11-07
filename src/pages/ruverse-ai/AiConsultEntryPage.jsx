@@ -336,6 +336,13 @@ import hallwayDohyungVideo from "@assets/videos/hallway_dohyung.mp4";
 import hallwaySonnyVideo from "@assets/videos/hallway_sonny.mp4";
 import hallwayKarinaVideo from "@assets/videos/hallway_karina.mp4";
 
+// SweetAlert2 임포트
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import CircularProgress from "@mui/material/CircularProgress"; // MUI 로딩 스피너 추가
+
+const MySwal = withReactContent(Swal);
+
 const AiConsultEntryPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -355,6 +362,7 @@ const AiConsultEntryPage = () => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [hallwayVideo, setHallwayVideo] = useState(null);
   const [isVideoReady, setIsVideoReady] = useState(false); // 비디오 준비 상태 추가
+  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
 
   const handleAvatarClick = (avatar) => {
     setSelectedAvatar((prev) => (prev === avatar ? null : avatar));
@@ -397,7 +405,22 @@ const AiConsultEntryPage = () => {
     formData.append("uname", unameToUse);
     formData.append("phoneNumber", phoneNumber.value);
     formData.append("selectedAvatar", selectedAvatar);
-    await dispatch(uploadNewSessionRequest(formData));
+
+    setIsLoading(true); // 버튼을 비활성화
+
+    try {
+      await dispatch(uploadNewSessionRequest(formData)).unwrap();
+    } catch (error) {
+      console.error("세션 업로드 실패:", error);
+      MySwal.fire({
+        title: "오류",
+        text: "세션 업로드에 실패했습니다. 다시 시도해주세요.",
+        icon: "error",
+        confirmButtonText: "확인",
+      });
+      setIsLoading(false); // 에러 발생 시 버튼을 다시 활성화
+      return;
+    }
 
     let hallwayVideoSrc;
     if (selectedAvatar === "sonny") {
@@ -410,19 +433,33 @@ const AiConsultEntryPage = () => {
       hallwayVideoSrc = hallwayDohyungVideo;
     }
 
-    // 비디오 사전 로드
-    const video = document.createElement("video");
-    video.src = hallwayVideoSrc;
-    video.preload = "auto";
-    video.oncanplaythrough = () => {
-      setHallwayVideo(hallwayVideoSrc);
-      setIsVideoReady(true); // 비디오 준비 완료
-      setIsVideoPlaying(true);
-    };
-    video.onerror = () => {
-      console.error("비디오 로드 실패");
-      // 필요 시 에러 처리 추가
-    };
+    if (hallwayVideoSrc) {
+      // 비디오 사전 로드
+      const video = document.createElement("video");
+      video.src = hallwayVideoSrc;
+      video.preload = "auto";
+      video.oncanplaythrough = () => {
+        setHallwayVideo(hallwayVideoSrc);
+        setIsVideoReady(true); // 비디오 준비 완료
+        setIsVideoPlaying(true);
+      };
+      video.onerror = () => {
+        console.error("비디오 로드 실패");
+        MySwal.fire({
+          title: "오류",
+          text: "비디오를 로드하는 데 실패했습니다. 다시 시도해주세요.",
+          icon: "error",
+          confirmButtonText: "확인",
+        });
+        setIsLoading(false); // 비디오 로드 실패 시 버튼을 다시 활성화
+      };
+    } else {
+      // 아바타가 선택되지 않았거나 해당 비디오가 없는 경우 네비게이트
+      navigate(
+        `/ai-consult/${unameToUse}?phoneNumber=${phoneNumber.value}&selectedAvatar=${selectedAvatar}`
+      );
+      setIsLoading(false); // 네비게이트 후 버튼을 다시 활성화 (필요에 따라)
+    }
   };
 
   const onVideoEnded = () => {
@@ -528,6 +565,7 @@ const AiConsultEntryPage = () => {
                       selectedAvatar === avatar.name
                         ? "5px solid #3399FF"
                         : "none",
+                    // borderRadius: "8px",
                     transition: "all 0.3s ease",
                   }}
                   alt={`Avatar ${avatar.name}`}
@@ -541,7 +579,7 @@ const AiConsultEntryPage = () => {
           <Box display="flex" justifyContent="center">
             <Button
               onClick={onClickStart}
-              disabled={!isButtonEnabled}
+              disabled={!isButtonEnabled || isLoading} // isLoading 상태 추가
               variant="contained"
               sx={{
                 fontFamily: "SUIT Variable",
@@ -557,15 +595,22 @@ const AiConsultEntryPage = () => {
                 padding: { xs: "6px 14px", sm: "8px 16px", md: "10px 20px" },
                 fontWeight: "bold",
                 fontSize: { xs: "14px", sm: "16px", md: "20px" },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
               }}
             >
-              상담 시작하기
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "상담 시작하기"
+              )}
             </Button>
           </Box>
         </Stack>
       </Box>
       {/* 영상 오버레이 */}
-      {isVideoPlaying && (
+      {isVideoPlaying && hallwayVideo && (
         <VideoOverlay>
           {!isVideoReady && (
             <LoadingContainer>
